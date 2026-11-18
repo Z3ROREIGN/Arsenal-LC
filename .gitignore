@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+.venv/
+build/
+dist_src/
+arsenal_lc_settings.json
