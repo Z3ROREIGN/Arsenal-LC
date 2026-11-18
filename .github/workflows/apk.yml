@@ -1,0 +1,52 @@
+name: Gerar APK (Android)
+on:
+  workflow_dispatch:   # cria o botão "Run workflow" na aba Actions
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Testes
+        run: python -m unittest discover -s tests
+
+      - name: Build web (pygbag)
+        run: |
+          python -m pip install pygbag
+          mkdir -p dist_src
+          cp main.py dist_src/
+          cp -r arsenal_lc dist_src/
+          python -m pygbag --build dist_src
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Criar app Android (Capacitor) com o build web dentro
+        run: |
+          mkdir apk && cd apk
+          npm init -y
+          npm install @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7
+          mkdir www
+          cp -r ../dist_src/build/web/* www/
+          npx cap init "Arsenal LC" com.z3roreign.arsenallc --web-dir=www
+          npx cap add android
+          npx cap sync android
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ArsenalLC-debug-apk
+          path: apk/android/app/build/outputs/apk/debug/app-debug.apk
